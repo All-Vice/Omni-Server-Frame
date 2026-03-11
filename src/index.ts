@@ -9,6 +9,8 @@ import gitRoutes from './server/routes/git.js';
 import githubRoutes from './server/routes/github.js';
 import { initDb } from './db/index.js';
 import { authMiddleware } from './server/middleware/auth.js';
+import { corsMiddleware } from './server/middleware/cors.js';
+import { rateLimitMiddleware } from './server/middleware/rateLimit.js';
 import { config } from 'dotenv';
 
 config();
@@ -32,6 +34,9 @@ const wss = new WebSocketServer({ server });
 const sessionManager = new SessionManager(KILO_PATH);
 
 app.use(express.json());
+
+app.use(corsMiddleware);
+app.use(rateLimitMiddleware);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', sessions: sessionManager.getSessionCount() });
