@@ -37,7 +37,8 @@ export interface AgentCapabilities {
 
 export interface InitializeResult {
   protocolVersion: number;
-  capabilities: AgentCapabilities;
+  agentCapabilities: AgentCapabilities;
+  authMethods?: Array<{ id: string; name: string; description: string }>;
   serverInfo: {
     name: string;
     version: string;
@@ -80,7 +81,8 @@ export class AcpClient extends EventEmitter {
     }
 
     const result = await this.sendRequest<{ sessionId: string }>('session/new', {
-      conversationId: crypto.randomUUID()
+      cwd: process.cwd(),
+      mcpServers: []
     });
 
     this.sessionId = result.sessionId;
@@ -164,11 +166,14 @@ export class AcpClient extends EventEmitter {
     });
 
     this.process.stderr?.on('data', (data) => {
-      this.logger.debug('Kilo:', data.toString());
+      const msg = data.toString();
+      this.logger.debug('Kilo:', msg);
+      this.emit('log', msg);
     });
 
     this.process.on('exit', (code) => {
       this.logger.info(`Kilo process exited with code ${code}`);
+      this.initialized = false;
       this.emit('exit', code);
     });
 
@@ -197,7 +202,9 @@ export class AcpClient extends EventEmitter {
         } else if (message.method) {
           this.emit('message', message);
         }
-      } catch {}
+      } catch (e) {
+        this.logger.debug('Failed to parse message:', line);
+      }
     }
   }
 

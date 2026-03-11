@@ -110,15 +110,20 @@ export class SessionInstance extends EventEmitter {
 
   private handleMessage(msg: Record<string, unknown>): void {
     const method = msg.method as string | undefined;
+    const params = msg.params as Record<string, unknown> | undefined;
     
-    if (method === 'session/update' || method === 'AgentMessageChunk') {
-      this.emit('update', msg.params);
-    } else if (method === 'session/end' || method === 'TurnEnd') {
-      this.emit('end', msg.params);
-    } else if (method === 'session/error') {
-      this.emit('error', msg.params);
-    } else if (method === 'ToolCall') {
-      this.emit('tool', msg.params);
+    this.logger.debug('Received message:', JSON.stringify(msg));
+    
+    if (method === 'session/update' || method === 'AgentMessageChunk' || method === 'agentai.messageChunk') {
+      this.emit('update', params);
+    } else if (method === 'session/end' || method === 'TurnEnd' || method === 'agentai.turnEnd') {
+      this.emit('end', params);
+    } else if (method === 'session/error' || method === 'error') {
+      this.emit('error', params);
+    } else if (method === 'ToolCall' || method === 'tool_call' || method === 'agentai.toolCall') {
+      this.emit('tool', params);
+    } else if (method === 'session/request_permission' || method === 'agentai.requestPermission') {
+      this.emit('permission', params);
     }
   }
 }

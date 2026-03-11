@@ -30,6 +30,7 @@
   },
   "homepage": "https://github.com/All-Vice/Omni-Server-Frame#readme",
   "dependencies": {
+    "better-sqlite3": "^12.6.2",
     "commander": "^12.1.0",
     "dotenv": "^16.6.1",
     "express": "^4.22.1",
