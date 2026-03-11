@@ -5,6 +5,7 @@ import { Logger } from './utils/logger.js';
 import { SessionManager } from './acp/session.js';
 import { AcpClient } from './acp/client.js';
 import sessionRoutes from './server/routes/session.js';
+import gitRoutes from './server/routes/git.js';
 import { config } from 'dotenv';
 
 config();
@@ -26,6 +27,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/session', sessionRoutes(sessionManager));
+app.use('/api/git', gitRoutes());
 
 wss.on('connection', (ws, req) => {
   const sessionId = new URL(req.url, `http://${req.headers.host}`).searchParams.get('sessionId');
@@ -78,17 +80,17 @@ server.listen(PORT, () => {
 });
 
 process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, shutting down...');
+  logger.info('SIGTERM received, shutting down gracefully...');
   await sessionManager.shutdown();
   server.close(() => {
-    process.exit(0);
+    logger.info('Server closed, PM2 will manage restart');
   });
 });
 
 process.on('SIGINT', async () => {
-  logger.info('SIGINT received, shutting down...');
+  logger.info('SIGINT received, shutting down gracefully...');
   await sessionManager.shutdown();
   server.close(() => {
-    process.exit(0);
+    logger.info('Server closed, PM2 will manage restart');
   });
 });
