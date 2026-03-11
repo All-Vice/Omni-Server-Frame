@@ -17,7 +17,11 @@ function cleanup(): void {
   });
 }
 
-setInterval(cleanup, WINDOW_MS);
+const cleanupInterval = setInterval(cleanup, WINDOW_MS);
+
+if (typeof cleanupInterval.unref === 'function') {
+  cleanupInterval.unref();
+}
 
 export function rateLimitMiddleware(req: Request, res: Response, next: NextFunction): void {
   const key = req.ip || 'unknown';

@@ -97,6 +97,13 @@ wss.on('connection', (ws, req) => {
 
 server.listen(PORT, () => {
   logger.info(`Omni-Server Frame running on port ${PORT}`);
+}).on('error', (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EADDRINUSE') {
+    logger.error(`Port ${PORT} is already in use. Try a different port.`);
+  } else {
+    logger.error('Server error:', err);
+  }
+  process.exit(1);
 });
 
 process.on('SIGTERM', async () => {

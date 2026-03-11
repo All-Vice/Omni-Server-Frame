@@ -22,12 +22,27 @@ export class SessionManager {
     const id = crypto.randomUUID();
     const session = new SessionInstance(id, this.kiloPath, options);
     
-    session.on('update', (data) => this.emit(`session:${id}:update`, data));
-    session.on('error', (error) => this.emit(`session:${id}:error`, error));
-    session.on('end', () => this.sessions.delete(id));
+    const updateHandler = (data: unknown) => this.emit(`session:${id}:update`, data);
+    const errorHandler = (error: unknown) => this.emit(`session:${id}:error`, error);
+    const endHandler = () => {
+      this.sessions.delete(id);
+      session.off('update', updateHandler);
+      session.off('error', errorHandler);
+      session.off('end', endHandler);
+    };
+
+    session.on('update', updateHandler);
+    session.on('error', errorHandler);
+    session.on('end', endHandler);
 
     this.sessions.set(id, session);
-    await session.start();
+    
+    try {
+      await session.start();
+    } catch (error) {
+      this.sessions.delete(id);
+      throw error;
+    }
     
     this.logger.info(`Session ${id} created`);
     return id;

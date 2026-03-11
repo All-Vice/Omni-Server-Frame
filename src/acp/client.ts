@@ -145,7 +145,15 @@ export class AcpClient extends EventEmitter {
 
     if (this.process) {
       this.process.kill();
-      this.process = null;
+      
+      // Force kill after 5 seconds if still alive
+      const forceKillTimeout = setTimeout(() => {
+        if (this.process && !this.process.killed) {
+          this.process.kill('SIGKILL');
+        }
+      }, 5000);
+      
+      forceKillTimeout.unref();
     }
     this.sessionId = null;
     this.initialized = false;
@@ -223,16 +231,29 @@ export class AcpClient extends EventEmitter {
         params
       };
 
-      this.pendingRequests.set(id, { resolve: resolve as (result: unknown) => void, reject });
-      
-      this.process.stdin.write(JSON.stringify(request) + '\n');
-
-      setTimeout(() => {
+      const timeout = setTimeout(() => {
         if (this.pendingRequests.has(id)) {
           this.pendingRequests.delete(id);
           reject(new Error('Request timeout'));
         }
       }, 30000);
+
+      if (typeof timeout.unref === 'function') {
+        timeout.unref();
+      }
+
+      this.pendingRequests.set(id, { 
+        resolve: (result: unknown) => {
+          clearTimeout(timeout);
+          resolve(result as T);
+        }, 
+        reject: (error: Error) => {
+          clearTimeout(timeout);
+          reject(error);
+        } 
+      });
+      
+      this.process.stdin.write(JSON.stringify(request) + '\n');
     });
   }
 }
